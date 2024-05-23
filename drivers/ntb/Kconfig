@@ -13,6 +13,13 @@ menuconfig NTB
 
 if NTB
 
+config NTB_CLIENT_ARRAY_SIZE
+	int "NTB Client Array Size"
+	range 1 20
+	default 1
+	help
+	 Number of NTB clients to support.
+
 config NTB_MSI
 	bool "MSI Interrupt Support"
 	depends on PCI_MSI
