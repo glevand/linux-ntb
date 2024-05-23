@@ -61,6 +61,7 @@
 #include <linux/interrupt.h>
 
 struct ntb_client;
+struct ntb_client_array;
 struct ntb_dev;
 struct ntb_msi;
 struct pci_dev;
@@ -403,6 +404,13 @@ struct ntb_client {
 	struct device_driver		drv;
 	const struct ntb_client_ops	ops;
 };
+
+struct ntb_client_array {
+	struct ntb_client clients[CONFIG_NTB_CLIENT_ARRAY_SIZE];
+	unsigned int array_size;
+	// unsigned int client_count;  // FIXME: Need this?
+};
+
 #define drv_ntb_client(__drv) container_of((__drv), struct ntb_client, drv)
 
 /**
@@ -421,6 +429,7 @@ struct ntb_dev {
 	const struct ntb_dev_ops	*ops;
 	void				*ctx;
 	const struct ntb_ctx_ops	*ctx_ops;
+	struct ntb_client_array		client_array;
 
 	/* private: */
 
