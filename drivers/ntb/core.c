@@ -260,19 +260,34 @@ int ntb_default_peer_port_idx(struct ntb_dev *ntb, int port)
 }
 EXPORT_SYMBOL(ntb_default_peer_port_idx);
 
+// static struct ntb_client_array ntb_client_array = {
+// 	.array_size = CONFIG_NTB_CLIENT_ARRAY_SIZE,
+// 	.client_count = 0,
+// };
+
 static int ntb_probe(struct device *dev)
 {
 	struct ntb_dev *ntb;
-	struct ntb_client *client;
+	struct ntb_client_array *client_array;
 	int rc;
+	int i;
 
 	get_device(dev);
 	ntb = dev_ntb(dev);
-	client = drv_ntb_client(dev->driver);
 
-	rc = client->ops.probe(client, ntb);
-	if (rc)
-		put_device(dev);
+	client_array = &ntb->client_array;
+	client_array->array_size = CONFIG_NTB_CLIENT_ARRAY_SIZE;
+	// client_array->client_count = CONFIG_NTB_CLIENT_ARRAY_SIZE;  // FIXME: Need this?
+
+	for (i = 0; i < CONFIG_NTB_CLIENT_ARRAY_SIZE; i++) {
+		struct ntb_client *client = &client_array->clients[i];
+
+		rc = client->ops.probe(client, ntb);
+		if (rc) {
+			put_device(dev);
+			break;
+		}
+	}
 
 	return rc;
 }
@@ -280,13 +295,20 @@ static int ntb_probe(struct device *dev)
 static void ntb_remove(struct device *dev)
 {
 	struct ntb_dev *ntb;
-	struct ntb_client *client;
 
 	if (dev->driver) {
-		ntb = dev_ntb(dev);
-		client = drv_ntb_client(dev->driver);
+		struct ntb_client_array *client_array;
+		int i;
 
-		client->ops.remove(client, ntb);
+		ntb = dev_ntb(dev);
+		client_array = &ntb->client_array;
+
+		for (i = 0; i < CONFIG_NTB_CLIENT_ARRAY_SIZE; i++) {
+			struct ntb_client *client = &client_array->clients[i];
+			client = drv_ntb_client(dev->driver);
+
+			client->ops.remove(client, ntb);
+		}
 		put_device(dev);
 	}
 }
